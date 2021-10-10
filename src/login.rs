@@ -10,6 +10,7 @@ use url::form_urlencoded::Serializer;
 const MGS_SAML_LOGIN_ENTRYPOINT: &str = "https://my.mgs.vic.edu.au/mg/saml_login?destination=mymgs";
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
+// TODO: Clean up this function
 pub async fn login() -> Result<(String, String, String)> {
     let now = Instant::now();
 
