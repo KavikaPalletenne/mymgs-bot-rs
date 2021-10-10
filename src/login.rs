@@ -5,16 +5,17 @@ use hyper::{Client, Request, Body};
 use hyper_tls::HttpsConnector;
 use std::time::Instant;
 use urlencoding::encode;
+use url::form_urlencoded::Serializer;
 
 const MGS_SAML_LOGIN_ENTRYPOINT: &str = "https://my.mgs.vic.edu.au/mg/saml_login?destination=mymgs";
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-pub async fn login() -> Result<String> {
+pub async fn login() -> Result<(String, String, String)> {
     let now = Instant::now();
 
     let username = encode("kbpalletenne@student.mgs.vic.edu.au");
     let password = "12062004"; // TODO: Get these from ENV variables
-    let (saml_post_url, simple_saml_session_id) = generate_saml_prerequisites().await?;
+    let (saml_post_url, simple_saml_session_id) = fetch_saml_prerequisites().await?;
 
     let https = HttpsConnector::new();
     let client = Client::builder().build::<_, hyper::Body>(https);
@@ -28,8 +29,6 @@ pub async fn login() -> Result<String> {
         .method("POST")
         .uri(&saml_post_url)
         .header("Cookie", &simple_saml_session_id) // SimpleSAMLSessionID
-        .header("Origin", "fs.mgs.vic.edu.au")
-        .header("Referer", &saml_post_url)
         .body(Body::from(body))
         .unwrap();
 
@@ -38,60 +37,70 @@ pub async fn login() -> Result<String> {
     let msis_auth_cookie = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..1733];
 
 
-    /////////////////////////////////////////////////////////////////
-    // Get SamlSession, MSISAuthentcated & MSISLoopDetection Cookies
-    /////////////////////////////////////////////////////////////////
+    ///////////////////////
+    // Get SAMLResponse Key
+    ///////////////////////
     let next_saml_request_url = response.headers().get("Location").unwrap().to_str().unwrap();
-    let cookie = format!("{}; {}", msis_auth_cookie, simple_saml_session_id);
+    let cookie_header = format!("{}; {}", msis_auth_cookie, simple_saml_session_id);
     let request = Request::builder()
         .method("GET")
         .uri(next_saml_request_url)
-        .header("Cookie", cookie) // SimpleSAMLSessionID
-        .header("Origin", "fs.mgs.vic.edu.au")
-        .header("Referer", &saml_post_url)
+        .header("Cookie", cookie_header) // SimpleSAMLSessionID
         .body(Body::empty())
         .unwrap();
 
     let response = client.request(request).await?;
 
-    let response_cookies = response.headers().get_all("Set-Cookie");
-    let mut iter = response_cookies.iter();
 
-    let saml_session_cookie = &iter.next().unwrap().to_str().unwrap()[..344];
-    let msis_authenticated_cookie = &iter.next().unwrap().to_str().unwrap()[..46];
-    let msis_loop_detection_cookie = &iter.next().unwrap().to_str().unwrap()[..56];
+    // Getting the SAMLResponseCookie from the response body.
+    let body_bytes = hyper::body::to_bytes(response).await?;
+    let body = String::from_utf8(body_bytes.to_vec()).expect("response was not valid utf-8");
 
-    // TODO: The "SAML Response" needed for the next request is a "hidden" input field of the body of this response ^^^^^.
-    let saml_response = // Get from the body of this response.
-
-    // println!("{} {} {}", saml_session_cookie, msis_authenticated_cookie, msis_loop_detection_cookie);
+    let saml_response = &body.to_string()[230..17442]; // Get from the body of the response.
 
 
     //////////////////////////
     // Get SimpleSAMLAuthToken
     //////////////////////////
-    let body = format!("SAMLResponse={}&RelayState=https://my.mgs.vic.edu.au/mg/saml_login?destination=mymgs", saml_response);
+    let body: String = Serializer::new(String::new())
+        .append_pair("SAMLResponse", saml_response)
+        .append_pair("RelayState", "https://my.mgs.vic.edu.au/mg/saml_login?destination=mymgs")
+        .finish();
 
     let request = Request::builder()
         .method("POST")
-        .uri("https://my.mgs.vic.edu.au/simplesaml/module.php/sp/saml2-acs.php/default-sp")
+        .uri("https://my.mgs.vic.edu.au/simplesaml/module.php/saml/sp/saml2-acs.php/default-sp")
         .header("Cookie", &simple_saml_session_id) // SimpleSAMLSessionID
-        .header("Origin", "httsp://fs.mgs.vic.edu.au")
-        .header("Referer", "https://fs.mgs.vic.edu.au/")
+        .header("Content-Type", "application/x-www-form-urlencoded")
         .body(Body::from(body))
         .unwrap();
 
     let response = client.request(request).await?;
-    let simple_saml_auth_token_cookie = &response.headers.get("Set-Cookie").unwrap().to_str().unwrap()[..]; //TODO: Find the length of the part of token I need
-    // println!("authtoken: {}", response.headers().get("Set-Cookie").unwrap().to_str().unwrap());
-    //TODO: These are all the responses I need, after that all I need to do is use these cookies when requesting the timetable and then parse the json and save to database.
-    println!("Logged In as user {}: {}ms", username, now.elapsed().as_millis());
-    Ok(msis_auth_cookie.to_string())
+    let simple_saml_auth_token_cookie = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..63];
 
+    ////////////////////////
+    // Get SSESSxxxx Cookie
+    ////////////////////////
+    let cookie_header = format!("{}; {}", simple_saml_session_id, simple_saml_auth_token_cookie);
+    let request = Request::builder()
+        .method("GET")
+        .uri("https://my.mgs.vic.edu.au/mg/saml_login?destination=mymgs")
+        .header("Cookie", cookie_header)
+        .body(Body::empty())
+        .unwrap();
+
+    let response = client.request(request).await?;
+
+    let ssess_cookie = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..81];
+
+
+    println!("Logged In as user {}: {}ms", username, now.elapsed().as_millis());
+
+    Ok((simple_saml_session_id, simple_saml_auth_token_cookie.to_string(), ssess_cookie.to_string()))
 }
 
 // Generate URL to push login info to + Generate SAML Session ID cookie
-pub async fn generate_saml_prerequisites() -> Result<(String, String)> {
+pub async fn fetch_saml_prerequisites() -> Result<(String, String)> {
     let now = Instant::now();
 
     let https = HttpsConnector::new();
@@ -102,6 +111,6 @@ pub async fn generate_saml_prerequisites() -> Result<(String, String)> {
     let session_id = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..52]; // get only the session ID
 
 
-    //println!("Generated SAML Prerequisites: {}ms", now.elapsed().as_millis());
+    println!("Fetched SAML Prerequisites: {}ms", now.elapsed().as_millis());
     Ok((saml_post_url.to_string(), session_id.to_string()))
 }

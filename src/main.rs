@@ -3,19 +3,16 @@
 
 mod login;
 mod timetable_service;
+mod timetable;
 
-use std::time::Instant;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
 
-    for i in 1..2 {
-        let now = Instant::now();
+    for i in 1..100000 {
         login::login().await?;
-
-        println!("Logged in: {}ms", now.elapsed().as_millis());
     }
 
     Ok(())
