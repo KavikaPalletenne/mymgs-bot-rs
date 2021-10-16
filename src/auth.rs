@@ -95,7 +95,7 @@ pub async fn login() -> Result<(String, String, String)> {
     let ssess_cookie = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..81];
 
 
-    println!("Logged In as user {}: {}ms", username, now.elapsed().as_millis());
+    //println!("Logged In as user {}: {}ms", username, now.elapsed().as_millis());
 
     Ok((simple_saml_session_id, simple_saml_auth_token_cookie.to_string(), ssess_cookie.to_string()))
 }
@@ -112,6 +112,6 @@ pub async fn fetch_saml_prerequisites() -> Result<(String, String)> {
     let session_id = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..52]; // get only the session ID
 
 
-    println!("Fetched SAML Prerequisites: {}ms", now.elapsed().as_millis());
+    //println!("Fetched SAML Prerequisites: {}ms", now.elapsed().as_millis());
     Ok((saml_post_url.to_string(), session_id.to_string()))
 }
