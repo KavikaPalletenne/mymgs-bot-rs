@@ -1,15 +1,27 @@
 // Discord bot that interfaces with myMGS to expose API data withing Discord
 // Copyright (c) 2021 Kavika Palletenne
 
-mod auth;
-mod timetable_service;
-mod timetable;
-mod student;
+// extern crates
+#[macro_use]
+extern crate diesel;
 
-use std::time::Instant;
+extern crate dotenv;
 
+// Modules
+pub mod auth; // myMGS login service
+//pub mod timetable; // Timetable service
+//pub mod user; // User service
+pub mod schema; // Auto-generated table macros
+pub mod models; // Holds data structs
+pub mod persistence; // Has functions to enable concise fetching of users/timetables
 
+// Imports
+use std::time::Instant; // Used for performance testing
+use diesel::prelude::*;
+
+// For code simplicity
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
