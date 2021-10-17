@@ -16,13 +16,13 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 pub async fn initialise_timetable(user_id: i64) -> Result<()> {
     let synergetic_id = user::get_user_synergetic_id_by_user_id(user_id).await?;
 
-    let timetable = fetch_timetable_by_synergetic_id(synergetic_id).await?;
+    let timetable = fetch_timetable_by_synergetic_id(synergetic_id, user_id).await?;
 
     Ok(())
 }
 
-pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32) -> Result<()> {
-
+pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64) -> Result<()> {
+    let pool = establish_database_connection().await?;
     dotenv().ok();
 
     let username = env::var("MGS_USERNAME").expect("USERNAME must be set"); // Using master credentials
@@ -50,6 +50,42 @@ pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32) -> Result<()> 
     println!("{}", json[2][1]["ClassCodeDescription"]); // Gets day 1, period 1
     //TODO: Get json out of response
 
+    let mut d_number = 1;
+    let mut p_number = 1;
+
+    let timetable_id = sqlx::query!(
+        r#"SELECT id FROM timetables WHERE user_id = $1"#,
+        user_id
+    ).fetch_one(&pool).await?.id;
+
+    for i in 1..=7 {
+        //    [day][period]
+        // json[2][1]["ClassCodeDescription"]
+        // json[3][1]["ClassCodeDescription"]
+        // json[5][1]["ClassCodeDescription"]
+        //     ...
+        // json[2][2]["ClassCodeDescription"]
+        // json[3][2]["ClassCodeDescription"]
+        // json[5][2]["ClassCodeDescription"]
+        p_number = 1;
+        for j in 2..=9 { // No. 2,3,5,6,8,9 for periods 1,2,3,4,5,6 (4 & 7 are Lunch and Recess)
+            if j != 4 && j != 7 {
+                let class_name = json[j][i]["ClassCodeDescription"].to_string();
+                let teacher = json[j][i]["StaffName"].to_string();
+                let day_number = d_number;
+                let period_number = p_number;
+
+                class::create_class(
+                    timetable_id, day_number, period_number,
+                    class_name, teacher
+                ).await?;
+
+                p_number += 1;
+            }
+        }
+        d_number += 1;
+    }
+
     Ok(())
 }
 
@@ -60,16 +96,16 @@ pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32) -> Result<()> 
 /////////////////
 
 // Create
-pub async fn create_timetable(user_id: i64, fetched_date: NaiveDate) -> Result<()> {
+pub async fn create_timetable(user_id: i64, fetched_date: NaiveDate) -> Result<i32> {
     let pool = establish_database_connection().await?;
 
-    sqlx::query!(
+    let timetable_id = sqlx::query!(
         "INSERT INTO timetables (user_id, fetched_date)
-         VALUES ($1, $2)",
+         VALUES ($1, $2) RETURNING id",
         user_id, fetched_date
-    ).execute(&pool).await?;
+    ).fetch_one(&pool).await?;
 
-    Ok(())
+    Ok(timetable_id.id)
 }
 
 // Read
