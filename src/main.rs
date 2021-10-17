@@ -29,15 +29,15 @@ pub async fn main() -> Result<()> {
 
 // Multithreading // TODO: Add the Discord bot run code here, so it can be run on all threads.
 async fn run() -> Result<()> {
-    for i in 1..999999 {
+    for i in 1..2 {
         let now = Instant::now();
         //auth::login("kbpalletenne@student.mgs.vic.edu.au", "12062004").await?;
 
-        let query = crate::user::create_user_by_id(i, 102760, "kbpalletenne", "password").await?;
-        let user = crate::user::get_user_by_id(i).await?;
-        let delete = crate::user::delete_user_by_id(i-1).await?;
+        //let query = crate::user::create_user_by_id(i, 102760, "kbpalletenne", "password").await?;
+        //let user = crate::user::get_user_by_id(i).await?;
+        //let delete = crate::user::delete_user_by_id(i-1).await?;
         //let id = crate::timetable::initialise_timetable(436035620905943041).await?;
-        let timetable = timetable::fetch_timetable_by_synergetic_id(102760).await?;
+        let timetable = timetable::fetch_timetable_by_synergetic_id(102760, 436035620905943041).await?;
         let time_elapsed = now.elapsed();
         println!("Logged in using {:?}: {}ms", std::thread::current().id(), time_elapsed.as_millis());
         println!("Fetched DB User {:?}: {}ns", std::thread::current().id(), time_elapsed.as_nanos());
