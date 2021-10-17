@@ -1,6 +1,3 @@
-extern crate diesel;
-use diesel::prelude::*;
-
 use crate::persistence::establish_database_connection;
 use crate::models::User;
 use sqlx::*;

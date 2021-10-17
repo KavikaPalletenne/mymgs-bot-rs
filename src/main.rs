@@ -2,9 +2,6 @@
 // Copyright (c) 2021 Kavika Palletenne
 
 // extern crates
-#[macro_use]
-extern crate diesel;
-
 extern crate dotenv;
 
 // Modules
@@ -17,7 +14,6 @@ pub mod persistence; // Has functions to enable concise fetching of users/timeta
 
 // Imports
 use std::time::Instant; // Used for performance testing
-use diesel::prelude::*;
 
 // For code simplicity
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;

@@ -1,7 +1,7 @@
 use serde::{ Serialize, Deserialize };
 use chrono::NaiveDate;
 
-#[derive(Debug, Queryable, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct User {
     pub id: i64, // Same as the unique "snowflake" number (u64, but returned by Discord as a String). Stored as u64 to enable faster SQL queries) , not something like "Endveous#1689" so that users changing their username won't affect the bot.
     pub synergetic_user_id: i32,
@@ -19,7 +19,7 @@ pub struct User {
 // }
 
 
-#[derive(Debug, Queryable, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Timetable {
     id: i32,
     user_id: i64,
@@ -36,7 +36,7 @@ pub struct Timetable {
 
 
 // TODO: Connect to timetable with diesel::associations
-#[derive(Debug, Queryable, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Class {
     id: i32,
     timetable_id: i32,
