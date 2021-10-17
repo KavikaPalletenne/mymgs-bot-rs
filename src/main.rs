@@ -3,13 +3,14 @@
 
 // Modules
 pub mod auth; // myMGS login service
-//pub mod timetable; // Timetable service
+pub mod timetable; // Timetable service
 pub mod user; // User service
 pub mod models; // Holds data structs
 pub mod persistence; // Has functions to enable concise fetching of users/timetables
 
 // Imports
 use std::time::Instant; // Used for performance testing
+use dotenv::dotenv;
 
 // For code simplicity
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -17,7 +18,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
-
+    dotenv().ok();
     let jh = tokio::task::spawn(run());
     jh.await?;
 
@@ -29,11 +30,12 @@ async fn run() -> Result<()> {
     for i in 1..999999 {
         let now = Instant::now();
 
-        auth::login().await?;
+        auth::login("kbpalletenne@student.mgs.vic.edu.au", "12062004").await?;
 
         let query = crate::user::create_user_by_id(i, 102760, "kbpalletenne", "password").await?;
         let user = crate::user::get_user_by_id(i).await?;
         let delete = crate::user::delete_user_by_id(i-1).await?;
+        let id = crate::timetable::initialise_timetable(436035620905943041).await?;
         let time_elapsed = now.elapsed();
         println!("Logged in using {:?}: {}ms", std::thread::current().id(), time_elapsed.as_millis());
         println!("Fetched DB User {:?}: {}ns", std::thread::current().id(), time_elapsed.as_nanos());
