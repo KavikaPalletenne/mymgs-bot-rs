@@ -1,7 +1,6 @@
 use crate::persistence::establish_database_connection;
 use crate::models::User;
 use sqlx::*;
-use sqlx::postgres::PgPoolOptions;
 use std::env;
 
 pub async fn get_user_by_id(id: i64) -> Result<User> {
@@ -18,6 +17,19 @@ pub async fn get_user_by_id(id: i64) -> Result<User> {
     println!("User id: {:?}", user.mgs_email);
 
     Ok(user)
+}
+
+pub async fn get_user_synergetic_id_by_id(id: i64) -> Result<i32> {
+    let pool = establish_database_connection().await?;
+
+    let record = sqlx::query!(
+        r#"SELECT synergetic_user_id FROM users WHERE id = $1"#,
+            id
+        )
+        .fetch_one(&pool)
+        .await?;
+
+    Ok(record.synergetic_user_id) // TODO: Find out how to get the value of the column in sqlx
 }
 
 pub async fn create_user_by_id(id: i64, synergetic_user_id: i32, mgs_email: &str, mgs_password: &str) -> Result<()> {
