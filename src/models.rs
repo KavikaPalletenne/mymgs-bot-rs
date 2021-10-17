@@ -12,9 +12,9 @@ pub struct User {
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Timetable {
-    id: i32,
-    user_id: i64,
-    fetched_date: NaiveDate,
+    pub id: i32,
+    pub user_id: i64,
+    pub fetched_date: NaiveDate,
 }
 
 
