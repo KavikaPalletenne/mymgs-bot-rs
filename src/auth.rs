@@ -10,10 +10,8 @@ const MGS_SAML_LOGIN_ENTRYPOINT: &str = "https://my.mgs.vic.edu.au/mg/saml_login
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 // TODO: Clean up this function
-pub async fn login() -> Result<(String, String, String)> {
+pub async fn login(username: &str, password: &str) -> Result<(String, String, String)> {
 
-    let username = "kbpalletenne@student.mgs.vic.edu.au";
-    let password = "12062004"; // TODO: Get these from ENV variables
     let (saml_post_url, simple_saml_session_id) = fetch_saml_prerequisites().await?;
 
     let https = HttpsConnector::new();
@@ -55,7 +53,6 @@ pub async fn login() -> Result<(String, String, String)> {
 
     let response = client.request(request).await?;
 
-
     // Getting the SAMLResponseCookie from the response body.
     let body_bytes = hyper::body::to_bytes(response).await?;
     let body = String::from_utf8(body_bytes.to_vec()).expect("response was not valid utf-8");
@@ -81,6 +78,7 @@ pub async fn login() -> Result<(String, String, String)> {
 
     let response = client.request(request).await?;
     let simple_saml_auth_token_cookie = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..63];
+
 
     ////////////////////////
     // Get SSESSxxxx Cookie
