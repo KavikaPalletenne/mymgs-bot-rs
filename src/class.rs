@@ -33,9 +33,7 @@ pub async fn get_all_classes_by_timetable_id(timetable_id: i32) -> Result<Vec<Cl
         Class,
         "SELECT * from classes WHERE timetable_id = $1 ORDER BY day_number, period_number ASC",
         timetable_id
-    )
-    .fetch_all(&pool)
-    .await?;
+    ).fetch_all(&pool).await?;
 
     Ok(classes)
 }
