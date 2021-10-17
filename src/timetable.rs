@@ -1,29 +1,29 @@
-// TODO: Find a good ORM library for Rust
-use diesel::associations;
+use crate::persistence::establish_database_connection;
+use crate::auth::login;
+use crate::models::Timetable;
+use crate::user;
+use sqlx::*;
+use std::env;
+use dotenv::dotenv;
 
 
-pub struct Timetable {
-    id: u32,
-    user_id: u32,
-    fetched_date: String, // TODO: Find a date library (saving date to SQL, probably comes with ORM) and a current time library
-    // TODO: Either do it this way (like I have done in the current bot) or find a way to do it properly (with an array for each day or array of arrays) depending on the Rust ORM.
+
+pub async fn initialise_timetable(user_id: i64) -> Result<()> {
+
+    let synergetic_id = user::get_user_synergetic_id_by_id(user_id).await?;
+
+    let timetable = fetch_timetable_by_synergetic_id(synergetic_id);
+
+    Ok(())
 }
 
-#[belongs_to(Timetable)]
-#[table_name = "tt_day"]
-pub struct Day {
-    id: u32,
-    timetable_id: u32,
-    day_number: u32, // Day 1 would have the value "1"
+async fn fetch_timetable_by_synergetic_id(synergetic_id: i32) -> Result<()> {
+    let username = env::var("USERNAME") // Using master credentials
+        .expect("USERNAME must be set");
+    let password = env::var("PASSWORD")
+        .expect("PASSWORD must be set");
 
-}
-#[belongs_to(Day)]
-#[table]
-pub struct Class {
-    id: u32,
-    timetable_day_id: u32,
-    period_number: u32, // The first period of the day would have value "1"
-
-    name: String,
-    teacher: String,
+    let (simple_saml_session_id, simple_saml_auth_token_cookie, ssess_cookie) = login(username.as_str(), password.as_str()).await?;
+    // TODO: Implement the JSON fetching and parsing
+    Ok(())
 }
