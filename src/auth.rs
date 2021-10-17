@@ -4,7 +4,6 @@
 use hyper::{Client, Request, Body};
 use hyper_tls::HttpsConnector;
 use std::time::Instant;
-use urlencoding::encode;
 use url::form_urlencoded::Serializer;
 
 const MGS_SAML_LOGIN_ENTRYPOINT: &str = "https://my.mgs.vic.edu.au/mg/saml_login?destination=mymgs";
@@ -12,9 +11,8 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 
 // TODO: Clean up this function
 pub async fn login() -> Result<(String, String, String)> {
-    let now = Instant::now();
 
-    let username = encode("kbpalletenne@student.mgs.vic.edu.au");
+    let username = "kbpalletenne@student.mgs.vic.edu.au";
     let password = "12062004"; // TODO: Get these from ENV variables
     let (saml_post_url, simple_saml_session_id) = fetch_saml_prerequisites().await?;
 
@@ -24,7 +22,12 @@ pub async fn login() -> Result<(String, String, String)> {
     //////////////////////
     // Get MSISAUTH Cookie
     //////////////////////
-    let body = format!("UserName={}&Password={}&AuthMethod=FormsAuthentication", username, password);
+    //let body = format!("UserName={}&Password={}&AuthMethod=FormsAuthentication", username, password);
+    let body: String = Serializer::new(String::new())
+        .append_pair("UserName", username)
+        .append_pair("Password", password)
+        .append_pair("AuthMethod", "FormsAuthentication")
+        .finish();
 
     let request = Request::builder()
         .method("POST")
@@ -93,9 +96,6 @@ pub async fn login() -> Result<(String, String, String)> {
     let response = client.request(request).await?;
 
     let ssess_cookie = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..81];
-
-
-    //println!("Logged In as user {}: {}ms", username, now.elapsed().as_millis());
 
     Ok((simple_saml_session_id, simple_saml_auth_token_cookie.to_string(), ssess_cookie.to_string()))
 }
