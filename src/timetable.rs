@@ -4,7 +4,7 @@ use crate::models::Timetable;
 use crate::user;
 use crate::class;
 use sqlx::*;
-use std::env;
+use std::{env, ptr};
 use dotenv::dotenv;
 use serde_json;
 use hyper::{Client, Request, Body};
@@ -15,13 +15,17 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 
 pub async fn initialise_timetable(user_id: i64) -> Result<()> {
     let synergetic_id = user::get_user_synergetic_id_by_user_id(user_id).await?;
+    let local_date = chrono::offset::Local::now().format("%Y-%m-%d").to_string();
 
-    let timetable = fetch_timetable_by_synergetic_id(synergetic_id, user_id).await?;
+    delete_timetable_by_user_id(user_id).await?;
+    let timetable_id = create_timetable(user_id, chrono::NaiveDate::parse_from_str(&*local_date, "%Y-%m-%d").unwrap()).await?;
+
+    let timetable = fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id).await?;
 
     Ok(())
 }
 
-pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64) -> Result<()> {
+pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64, timetable_id: i32) -> Result<()> {
     let pool = establish_database_connection().await?;
     dotenv().ok();
 
@@ -50,11 +54,6 @@ pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64) 
 
     let mut d_number = 1;
     let mut p_number = 1;
-
-    let timetable_id = sqlx::query!(
-        r#"SELECT id FROM timetables WHERE user_id = $1"#,
-        user_id
-    ).fetch_one(&pool).await?.id;
 
     for i in 1..=7 {
         //    [day][period]
@@ -114,7 +113,7 @@ pub async fn create_timetable(user_id: i64, fetched_date: NaiveDate) -> Result<i
 pub async fn get_timetable_by_user_id(user_id: i64) -> Result<Timetable> {
     let pool = establish_database_connection().await?;
 
-    let timetable = sqlx::query_as!(
+    let mut timetable = sqlx::query_as!(
         Timetable,
         "SELECT * FROM timetables WHERE user_id = $1",
         user_id
