@@ -20,7 +20,6 @@ pub async fn login(username: &str, password: &str) -> Result<(String, String, St
     //////////////////////
     // Get MSISAUTH Cookie
     //////////////////////
-    //let body = format!("UserName={}&Password={}&AuthMethod=FormsAuthentication", username, password);
     let body: String = Serializer::new(String::new())
         .append_pair("UserName", username)
         .append_pair("Password", password)
