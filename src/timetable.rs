@@ -47,8 +47,6 @@ pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64) 
     let body = String::from_utf8(body_bytes.to_vec()).expect("response was not valid utf-8");
     let json: serde_json::Value = serde_json::from_str(&body.as_str()).expect("JSON was not formatted properly");
 
-    println!("{}", json[2][1]["ClassCodeDescription"]); // Gets day 1, period 1
-    //TODO: Get json out of response
 
     let mut d_number = 1;
     let mut p_number = 1;
@@ -75,9 +73,13 @@ pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64) 
                 let day_number = d_number;
                 let period_number = p_number;
 
+                // Remove quotes
+                let class_name = &class_name[1..(class_name.len()-1)].to_string();
+                let teacher = &teacher[1..(teacher.len()-1)].to_string();
+
                 class::create_class(
                     timetable_id, day_number, period_number,
-                    class_name, teacher
+                    class_name.clone(), teacher.clone()
                 ).await?;
 
                 p_number += 1;
