@@ -10,17 +10,27 @@ use serde_json;
 use hyper::{Client, Request, Body};
 use hyper_tls::HttpsConnector;
 use chrono::NaiveDate;
+use std::time::Instant;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 pub async fn initialise_timetable(user_id: i64) -> Result<()> {
     let synergetic_id = user::get_user_synergetic_id_by_user_id(user_id).await?;
     let local_date = chrono::offset::Local::now().format("%Y-%m-%d").to_string();
+    let fetched_date = chrono::NaiveDate::parse_from_str(&*local_date, "%Y-%m-%d").unwrap();
 
-    delete_timetable_by_user_id(user_id).await?;
-    let timetable_id = create_timetable(user_id, chrono::NaiveDate::parse_from_str(&*local_date, "%Y-%m-%d").unwrap()).await?;
+    let mut timetable_id = get_timetable_id_by_user_id_if_it_exists(user_id).await?; // Returns 0 if timetable doesn't exist
 
-    let timetable = fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id).await?;
+    if timetable_id == 0 {
+        timetable_id = create_timetable(user_id, fetched_date).await?; // Create a new timetable
+        fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id).await?;
+
+        return Ok(());
+    }
+
+    class::delete_all_classes_in_timetable(timetable_id).await?; // Delete existing classes
+    fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id).await?; // If timetable exists, get new set of classes and update fetched date
+    update_timetable_by_user_id(user_id, fetched_date).await?;
 
     Ok(())
 }
@@ -55,6 +65,7 @@ pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64, 
     let mut d_number = 1;
     let mut p_number = 1;
 
+    let now = Instant::now();
     for i in 1..=7 {
         //    [day][period]
         // json[2][1]["ClassCodeDescription"]
@@ -75,17 +86,20 @@ pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64, 
                 // Remove quotes
                 let class_name = &class_name[1..(class_name.len()-1)].to_string();
                 let teacher = &teacher[1..(teacher.len()-1)].to_string();
-
-                class::create_class(
+                let now = Instant::now();
+                class::create_class_batch(
                     timetable_id, day_number, period_number,
-                    class_name.clone(), teacher.clone()
+                    class_name.clone(), teacher.clone(), &pool
                 ).await?;
+                println!("Pushed class [{}, {}] to database: {} μs", period_number, day_number, now.elapsed().as_micros());
 
                 p_number += 1;
             }
         }
         d_number += 1;
     }
+
+    println!("Pushed classes to database for user {}: {}ms", user_id, now.elapsed().as_millis());
 
     Ok(())
 }
@@ -152,4 +166,21 @@ pub async fn delete_timetable_by_user_id(user_id: i64) -> Result<()> {
     ).execute(&pool).await?;
 
     Ok(())
+}
+
+// Check if timetable exists and return its id. If it doesn't exists, the returned id is 0
+pub async fn get_timetable_id_by_user_id_if_it_exists(user_id: i64) -> Result<i32> {
+    let pool = establish_database_connection().await?;
+
+    let timetable_id = sqlx::query!(
+        "SELECT id FROM timetables
+         WHERE EXISTS (SELECT id FROM timetables WHERE user_id = $1)",
+        user_id
+    ).fetch_all(&pool).await?;
+
+    if timetable_id.len() == 0 {
+        return Ok(0);
+    }
+
+    Ok(timetable_id[0].id)
 }
