@@ -38,9 +38,10 @@ async fn run() -> Result<()> {
         //let delete = crate::user::delete_user_by_id(i-1).await?;
         //let id = crate::timetable::initialise_timetable(436035620905943041).await?;
         //let timetable = timetable::fetch_timetable_by_synergetic_id(102760, 436035620905943041).await?;
-        let classes = class::get_all_classes_by_timetable_id(1).await?;
+        let timetable = timetable::initialise_timetable(436035620905943041).await?;
+        //let classes = class::get_all_classes_by_timetable_id(1).await?;
 
-        println!("classes in timetable 1: {:?}", classes[0]);
+        //println!("classes in timetable 1: {:?}", classes[0]);
         let time_elapsed = now.elapsed();
         //println!("Logged in using {:?}: {}ms", std::thread::current().id(), time_elapsed.as_millis());
         println!("Fetched DB User {:?}: {}ms", std::thread::current().id(), time_elapsed.as_millis());
