@@ -74,5 +74,5 @@ pub async fn get_user_synergetic_id_by_user_id(id: i64) -> Result<i32> {
             id
         ).fetch_one(&pool).await?;
 
-    Ok(record.synergetic_user_id) // TODO: Find out how to get the value of the column in sqlx
+    Ok(record.synergetic_user_id)
 }
