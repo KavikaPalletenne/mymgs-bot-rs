@@ -4,14 +4,13 @@ use sqlx::*;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
 
-pub async fn get_user_by_id(user_id: i64) -> Result<User> {
-
+pub async fn get_user_by_id(id: i64) -> Result<User> {
     let pool = establish_database_connection().await?;
 
     let user = sqlx::query_as!(
         User,
         "SELECT * FROM users WHERE id = $1",
-            user_id
+            id
         )
         .fetch_one(&pool)
         .await?;
@@ -21,4 +20,35 @@ pub async fn get_user_by_id(user_id: i64) -> Result<User> {
     Ok(user)
 }
 
-// TODO: Use this tutorial to implement CRUD for structs: https://cetra3.github.io/blog/implementing-a-jobq-sqlx/
+pub async fn create_user_by_id(id: i64, synergetic_user_id: i32, mgs_email: &str, mgs_password: &str) -> Result<()> {
+    let pool = establish_database_connection().await?;
+
+    sqlx::query!(
+        "INSERT INTO users (id, synergetic_user_id, mgs_email, mgs_password) VALUES ($1, $2, $3, $4)",
+        id, synergetic_user_id, mgs_email, mgs_password
+    ).execute(&pool).await?;
+
+    Ok(())
+}
+
+pub async fn update_user_by_id(id: i64, synergetic_user_id: i32, mgs_email: &str, mgs_password: &str) -> Result<()> {
+    let pool = establish_database_connection().await?;
+
+    sqlx::query!(
+        "UPDATE users SET synergetic_user_id = $1, mgs_email = $2, mgs_password = $3 WHERE id = $4",
+        synergetic_user_id, mgs_email, mgs_password, id
+    ).execute(&pool).await?;
+
+    Ok(())
+}
+
+pub async fn delete_user_by_id(id: i64) -> Result<()> {
+    let pool = establish_database_connection().await?;
+
+    sqlx::query!(
+        "DELETE FROM users WHERE id = $1",
+        id
+    ).execute(&pool).await?;
+
+    Ok(())
+}
