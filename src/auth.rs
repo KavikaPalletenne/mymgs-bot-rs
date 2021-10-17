@@ -11,7 +11,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 
 // TODO: Clean up this function
 pub async fn login(username: &str, password: &str) -> Result<(String, String, String)> {
-
+    let now = Instant::now();
     let (saml_post_url, simple_saml_session_id) = fetch_saml_prerequisites().await?;
 
     let https = HttpsConnector::new();
@@ -93,7 +93,7 @@ pub async fn login(username: &str, password: &str) -> Result<(String, String, St
     let response = client.request(request).await?;
 
     let ssess_cookie = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..81];
-
+    println!("Logged in: {}ms", now.elapsed().as_millis());
     Ok((simple_saml_session_id, simple_saml_auth_token_cookie.to_string(), ssess_cookie.to_string()))
 }
 
