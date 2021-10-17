@@ -30,9 +30,7 @@ pub async fn get_user_by_id(id: i64) -> Result<User> {
         User,
         "SELECT * FROM users WHERE id = $1",
             id
-        )
-        .fetch_one(&pool)
-        .await?;
+        ).fetch_one(&pool).await?;
 
     println!("User id: {:?}", user.mgs_email);
 
@@ -74,9 +72,7 @@ pub async fn get_user_synergetic_id_by_user_id(id: i64) -> Result<i32> {
     let record = sqlx::query!(
         r#"SELECT synergetic_user_id FROM users WHERE id = $1"#,
             id
-        )
-        .fetch_one(&pool)
-        .await?;
+        ).fetch_one(&pool).await?;
 
     Ok(record.synergetic_user_id) // TODO: Find out how to get the value of the column in sqlx
 }
