@@ -1,14 +1,10 @@
 // Discord bot that interfaces with myMGS to expose API data withing Discord
 // Copyright (c) 2021 Kavika Palletenne
 
-// extern crates
-extern crate dotenv;
-
 // Modules
 pub mod auth; // myMGS login service
 //pub mod timetable; // Timetable service
 pub mod user; // User service
-//pub mod schema; // Auto-generated table macros
 pub mod models; // Holds data structs
 pub mod persistence; // Has functions to enable concise fetching of users/timetables
 
@@ -30,12 +26,14 @@ pub async fn main() -> Result<()> {
 
 // Multithreading // TODO: Add the Discord bot run code here, so it can be run on all threads.
 async fn run() -> Result<()> {
-    loop {
+    for i in 1..999999 {
         let now = Instant::now();
 
         auth::login().await?;
 
-        let user = crate::user::get_user_by_id(123123).await?;
+        let query = crate::user::create_user_by_id(i, 102760, "kbpalletenne", "password").await?;
+        let user = crate::user::get_user_by_id(i).await?;
+        let delete = crate::user::delete_user_by_id(i-1).await?;
         let time_elapsed = now.elapsed();
         println!("Logged in using {:?}: {}ms", std::thread::current().id(), time_elapsed.as_millis());
         println!("Fetched DB User {:?}: {}ns", std::thread::current().id(), time_elapsed.as_nanos());
