@@ -1,9 +1,27 @@
+extern crate diesel;
+use diesel::prelude::*;
 
-#[derive(Queryable)]
-pub struct User {
-    discord_user_id: u64, // This is also the user's id. in DB. The unique "snowflake" number (u64, but returned by Discord as a String). Stored as u64 to enable faster SQL queries) , not something like "Endveous#1689" so that users changing their username won't affect the bot.
+use crate::persistence::establish_database_connection;
+use crate::models::User;
+use sqlx::*;
+use sqlx::postgres::PgPoolOptions;
+use std::env;
 
-    synergetic_user_id: u16,
-    mgs_email: String, // TODO: Leave this in? Or remove as people will never trust this.
-    mgs_password: String,
+pub async fn get_user_by_id(user_id: i64) -> Result<User> {
+
+    let pool = establish_database_connection().await?;
+
+    let user = sqlx::query_as!(
+        User,
+        "SELECT * FROM users WHERE id = $1",
+            user_id
+        )
+        .fetch_one(&pool)
+        .await?;
+
+    println!("User id: {:?}", user.mgs_email);
+
+    Ok(user)
 }
+
+// TODO: Use this tutorial to implement CRUD for structs: https://cetra3.github.io/blog/implementing-a-jobq-sqlx/

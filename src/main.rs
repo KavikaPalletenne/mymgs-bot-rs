@@ -10,8 +10,8 @@ extern crate dotenv;
 // Modules
 pub mod auth; // myMGS login service
 //pub mod timetable; // Timetable service
-//pub mod user; // User service
-pub mod schema; // Auto-generated table macros
+pub mod user; // User service
+//pub mod schema; // Auto-generated table macros
 pub mod models; // Holds data structs
 pub mod persistence; // Has functions to enable concise fetching of users/timetables
 
@@ -34,13 +34,15 @@ pub async fn main() -> Result<()> {
 
 // Multithreading // TODO: Add the Discord bot run code here, so it can be run on all threads.
 async fn run() -> Result<()> {
-    for i in 1..100000 {
+    loop {
         let now = Instant::now();
 
         auth::login().await?;
 
+        let user = crate::user::get_user_by_id(123123).await?;
         let time_elapsed = now.elapsed();
         println!("Logged in using {:?}: {}ms", std::thread::current().id(), time_elapsed.as_millis());
+        println!("Fetched DB User {:?}: {}ns", std::thread::current().id(), time_elapsed.as_nanos());
 
     }
 

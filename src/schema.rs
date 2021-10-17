@@ -1,18 +1,11 @@
 table! {
     classes (id) {
         id -> Int4,
-        day_id -> Int4,
+        timetable_id -> Int4,
+        day_number -> Int2,
         period_number -> Int2,
         name -> Text,
         teacher -> Text,
-    }
-}
-
-table! {
-    days (id) {
-        id -> Int4,
-        timetable_id -> Int4,
-        day_number -> Int2,
     }
 }
 
@@ -35,7 +28,6 @@ table! {
 
 allow_tables_to_appear_in_same_query!(
     classes,
-    days,
     timetables,
     users,
 );
