@@ -1,7 +1,6 @@
 use sqlx::{ postgres::PgPoolOptions, Pool, Postgres };
 use std::env;
 use dotenv::dotenv;
-use crate::models::*;
 
 pub async fn establish_database_connection() -> Result<Pool<Postgres>, sqlx::Error> {
     dotenv().ok();

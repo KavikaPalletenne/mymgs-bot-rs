@@ -11,7 +11,6 @@ pub mod class; // Class Service
 
 // Imports
 use std::time::Instant; // Used for performance testing
-use dotenv::dotenv;
 
 // For code simplicity
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -21,24 +20,21 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 pub async fn main() -> Result<()> {
 
     let jh = tokio::task::spawn(run());
-    jh.await?;
+    jh.await?
 
-
-    Ok(())
 }
 
 // Multithreading // TODO: Add the Discord bot run code here, so it can be run on all threads.
 async fn run() -> Result<()> {
-    for i in 1..2 {
-        let now = Instant::now();
 
-        let timetable = timetable::initialise_timetable(436035620905943041).await?;
+    let now = Instant::now();
 
-        let time_elapsed = now.elapsed();
+    timetable::initialise_timetable(436035620905943041).await?;
 
-        println!("Fetched User Timetable {:?}: {}ms", std::thread::current().id(), time_elapsed.as_millis());
+    let time_elapsed = now.elapsed();
 
-    }
+    println!("Fetched User Timetable {:?}: {}ms", std::thread::current().id(), time_elapsed.as_millis());
+
 
     Ok(())
 }

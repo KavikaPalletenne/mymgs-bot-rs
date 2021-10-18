@@ -4,7 +4,7 @@ use crate::models::Timetable;
 use crate::user;
 use crate::class;
 use sqlx::*;
-use std::{env, ptr};
+use std::env;
 use dotenv::dotenv;
 use serde_json;
 use hyper::{Client, Request, Body};
@@ -61,7 +61,6 @@ pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64, 
     let body = String::from_utf8(body_bytes.to_vec()).expect("response was not valid utf-8");
     let json: serde_json::Value = serde_json::from_str(&body.as_str()).expect("JSON was not formatted properly");
     let mut d_number = 1;
-    let mut p_number = 1;
 
     let now = Instant::now();
     for i in 1..=7 {
@@ -73,7 +72,7 @@ pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64, 
         // json[2][2]["ClassCodeDescription"]
         // json[3][2]["ClassCodeDescription"]
         // json[5][2]["ClassCodeDescription"]
-        p_number = 1;
+        let mut p_number = 1;
         for j in 2..=9 { // No. 2,3,5,6,8,9 for periods 1,2,3,4,5,6 (4 & 7 are Lunch and Recess)
             if j != 4 && j != 7 {
                 let class_name = json[j][i]["ClassCodeDescription"].to_string();
@@ -121,7 +120,7 @@ pub async fn create_timetable(user_id: i64, fetched_date: NaiveDate, pool: &Pool
 
 // Read
 pub async fn get_timetable_by_user_id(user_id: i64, pool: &Pool<Postgres>) -> Result<Timetable> {
-    let mut timetable = sqlx::query_as!(
+    let timetable = sqlx::query_as!(
         Timetable,
         "SELECT * FROM timetables WHERE user_id = $1",
         user_id

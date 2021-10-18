@@ -99,7 +99,6 @@ pub async fn login(username: &str, password: &str) -> Result<(String, String, St
 
 // Generate URL to push login info to + Generate SAML Session ID cookie
 pub async fn fetch_saml_prerequisites() -> Result<(String, String)> {
-    let now = Instant::now();
 
     let https = HttpsConnector::new();
     let client = Client::builder().build::<_, hyper::Body>(https);
@@ -109,6 +108,5 @@ pub async fn fetch_saml_prerequisites() -> Result<(String, String)> {
     let session_id = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..52]; // get only the session ID
 
 
-    //println!("Fetched SAML Prerequisites: {}ms", now.elapsed().as_millis());
     Ok((saml_post_url.to_string(), session_id.to_string()))
 }

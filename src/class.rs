@@ -1,7 +1,5 @@
-use crate::persistence::establish_database_connection;
 use crate::models::Class;
 use sqlx::*;
-use std::env;
 
 
 //////////////////
