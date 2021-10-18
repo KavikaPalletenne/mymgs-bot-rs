@@ -11,6 +11,7 @@ use std::num::ParseIntError;
 use std::ops::Range;
 use std::str::FromStr;
 use serenity::model::gateway::Activity;
+use crate::timetable::initialise_timetable;
 
 // For code simplicity
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -89,7 +90,15 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         "The bot will now fetch the timetable associated with user ``{}`` and assign it to your account.\n\
         **If you have entered it incorrectly, please contact support:** https://discord.gg/NU2hVUnj"
         , synergetic_id);
-    msg.reply(ctx,reply_msg).await?;
+
+    let timetable_response = initialise_timetable(user_id).await?;
+    let timetable_response = timetable_response.as_str();
+    match timetable_response {
+        "successful" => {msg.reply(ctx, "Successfully fetched timetable").await?;}
+        _ => {msg.reply(ctx, "No such timetable exists. Ensure your Synergetic ID is correct.").await?; }
+    }
+
+    //msg.reply(ctx,reply_msg).await?;
 
     Ok(())
 }

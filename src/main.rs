@@ -29,7 +29,7 @@ pub async fn main() -> Result<()> {
 async fn run() -> Result<()> {
 
     // let now = Instant::now();
-    // timetable::initialise_timetable(436035620905943041).await?;
+    //timetable::initialise_timetable(436035620905943041).await?;
     // let time_elapsed = now.elapsed();
     // println!("Fetched User Timetable {:?}: {}ms", std::thread::current().id(), time_elapsed.as_millis());
 

@@ -11,11 +11,12 @@ use hyper::{Client, Request, Body};
 use hyper_tls::HttpsConnector;
 use chrono::NaiveDate;
 use std::time::Instant;
+use serde_json::value::Value::Null;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 // TODO: Pass in a master PgPool for each DB function instead of instantiating a new one each time (takes a lot of time)
-pub async fn initialise_timetable(user_id: i64) -> Result<()> {
+pub async fn initialise_timetable(user_id: i64) -> Result<String> {
     let pool = establish_database_connection().await?;
 
     let synergetic_id = user::get_user_synergetic_id_by_user_id(user_id, &pool).await?;
@@ -26,18 +27,25 @@ pub async fn initialise_timetable(user_id: i64) -> Result<()> {
 
     if timetable_id == 0 {
         timetable_id = create_timetable(user_id, fetched_date, &pool).await?; // Create a new timetable
-        fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id, &pool).await?;
+        let fetched = fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id, &pool).await?;
 
-        return Ok(());
+        return Ok("successful".to_string());
     }
 
     class::delete_all_classes_in_timetable(timetable_id, &pool).await?; // Delete existing classes
-    fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id, &pool).await?; // If timetable exists, get new set of classes and update fetched date
+    let fetched = fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id, &pool).await?; // If timetable exists, get new set of classes and update fetched date
+    let fetched = fetched.as_str();
+
+    match fetched {
+        "successful" => println!("Timetable exists {}", synergetic_id),
+        _ => { return Ok("unsuccessful".to_string()); }
+    }
+
     update_timetable_by_user_id(user_id, fetched_date, &pool).await?;
-    Ok(())
+    Ok("successful".to_string())
 }
 
-pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64, timetable_id: i32, pool: &Pool<Postgres>) -> Result<()> {
+pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64, timetable_id: i32, pool: &Pool<Postgres>) -> Result<String> {
     dotenv().ok();
 
     let username = env::var("MGS_USERNAME").expect("USERNAME must be set"); // Using master credentials
@@ -61,6 +69,11 @@ pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64, 
     let body = String::from_utf8(body_bytes.to_vec()).expect("response was not valid utf-8");
     let json: serde_json::Value = serde_json::from_str(&body.as_str()).expect("JSON was not formatted properly");
     let mut d_number = 1;
+
+    if json == Null {
+        println!("No such timetable with synergetic id {}", synergetic_id);
+        return Ok("unsuccessful".to_string());
+    }
 
     let now = Instant::now();
     for i in 1..=7 {
@@ -98,7 +111,7 @@ pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64, 
 
     println!("Pushed classes to database for user {}: {}ms", user_id, now.elapsed().as_millis());
 
-    Ok(())
+    Ok("successful".to_string())
 }
 
 
