@@ -91,6 +91,7 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         **If you have entered it incorrectly, please contact support:** https://discord.gg/NU2hVUnj"
         , synergetic_id);
 
+    // Check if timetable exists on myMGS API
     let timetable_response = initialise_timetable(user_id).await?;
     let timetable_response = timetable_response.as_str();
     match timetable_response {

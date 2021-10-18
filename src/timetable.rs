@@ -36,6 +36,7 @@ pub async fn initialise_timetable(user_id: i64) -> Result<String> {
     let fetched = fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id, &pool).await?; // If timetable exists, get new set of classes and update fetched date
     let fetched = fetched.as_str();
 
+    // Check if timetable exists on myMGS API
     match fetched {
         "successful" => println!("Timetable exists {}", synergetic_id),
         _ => { return Ok("unsuccessful".to_string()); }
