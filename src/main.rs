@@ -8,6 +8,7 @@ pub mod models; // Holds data structs
 pub mod user; // User CRUD & utility functions
 pub mod timetable; // Timetable CRUD & utility functions
 pub mod class; // Class CRUD & utility functions
+pub mod day; // Day number module
 pub mod bot; // Discord bot module
 
 // Imports

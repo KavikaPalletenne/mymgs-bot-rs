@@ -1,4 +1,3 @@
-use crate::persistence::establish_database_connection;
 use crate::auth::login;
 use crate::models::Timetable;
 use crate::user;
@@ -16,18 +15,17 @@ use serde_json::value::Value::Null;
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 // TODO: Pass in a master PgPool for each DB function instead of instantiating a new one each time (takes a lot of time)
-pub async fn initialise_timetable(user_id: i64) -> Result<String> {
-    let pool = establish_database_connection().await?;
+pub async fn initialise_timetable(user_id: i64, pool: &PgPool) -> Result<String> {
 
-    let synergetic_id = user::get_user_synergetic_id_by_user_id(user_id, &pool).await?;
+    let synergetic_id = user::get_user_synergetic_id_by_user_id(user_id, pool).await?;
     let local_date = chrono::offset::Local::now().format("%Y-%m-%d").to_string();
     let fetched_date = chrono::NaiveDate::parse_from_str(&*local_date, "%Y-%m-%d").unwrap();
 
-    let mut timetable_id = get_timetable_id_by_user_id_if_it_exists(user_id, &pool).await?; // Returns 0 if timetable doesn't exist
+    let mut timetable_id = get_timetable_id_by_user_id_if_it_exists(user_id, pool).await?; // Returns 0 if timetable doesn't exist
 
     if timetable_id == 0 {
-        timetable_id = create_timetable(user_id, fetched_date, &pool).await?; // Create a new timetable
-        let fetched = fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id, &pool).await?;
+        timetable_id = create_timetable(user_id, fetched_date, pool).await?; // Create a new timetable
+        let fetched = fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id, pool).await?;
         let fetched = fetched.as_str();
         match fetched {
             "successful" => println!("Timetable exists on MGS API - id:{}", synergetic_id),
@@ -37,8 +35,8 @@ pub async fn initialise_timetable(user_id: i64) -> Result<String> {
         return Ok("successful".to_string());
     }
 
-    class::delete_all_classes_in_timetable(timetable_id, &pool).await?; // Delete existing classes
-    let fetched = fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id, &pool).await?; // If timetable exists, get new set of classes and update fetched date
+    class::delete_all_classes_in_timetable(timetable_id, pool).await?; // Delete existing classes
+    let fetched = fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id, pool).await?; // If timetable exists, get new set of classes and update fetched date
     let fetched = fetched.as_str();
 
     // Check if timetable exists on myMGS API
@@ -47,7 +45,7 @@ pub async fn initialise_timetable(user_id: i64) -> Result<String> {
         _ => { return Ok("unsuccessful".to_string()); }
     }
 
-    update_timetable_by_user_id(user_id, fetched_date, &pool).await?; // Update fetched date of existing timetable
+    update_timetable_by_user_id(user_id, fetched_date, pool).await?; // Update fetched date of existing timetable
     Ok("successful".to_string())
 }
 
