@@ -28,14 +28,12 @@ pub async fn main() -> Result<()> {
 // Multithreading // TODO: Add the Discord bot run code here, so it can be run on all threads.
 async fn run() -> Result<()> {
 
-    let now = Instant::now();
+    // let now = Instant::now();
+    // timetable::initialise_timetable(436035620905943041).await?;
+    // let time_elapsed = now.elapsed();
+    // println!("Fetched User Timetable {:?}: {}ms", std::thread::current().id(), time_elapsed.as_millis());
 
-    timetable::initialise_timetable(436035620905943041).await?;
-
-    let time_elapsed = now.elapsed();
-
-    println!("Fetched User Timetable {:?}: {}ms", std::thread::current().id(), time_elapsed.as_millis());
-
+    bot::bot_run().await?;
 
     Ok(())
 }
