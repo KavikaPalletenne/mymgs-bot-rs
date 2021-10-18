@@ -87,15 +87,16 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     }
 
     let reply_msg = format!(
-        "The bot will now fetch the timetable associated with user ``{}`` and assign it to your account.\n\
-        **If you have entered it incorrectly, please contact support:** https://discord.gg/NU2hVUnj"
+        "**SUCCESS**\n\
+        The bot has fetched the timetable associated with Synergetic ID ``{}`` and assigned it to your account.\n\
+        **If you have entered your ID incorrectly, please contact support:** https://discord.gg/NU2hVUnj"
         , synergetic_id);
 
     // Check if timetable exists on myMGS API
     let timetable_response = initialise_timetable(user_id).await?;
     let timetable_response = timetable_response.as_str();
     match timetable_response {
-        "successful" => {msg.reply(ctx, "Successfully fetched timetable").await?;}
+        "successful" => {msg.reply(ctx, reply_msg).await?;}
         _ => {msg.reply(ctx, "No such timetable exists. Ensure your Synergetic ID is correct.").await?; }
     }
 
