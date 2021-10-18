@@ -28,6 +28,11 @@ pub async fn initialise_timetable(user_id: i64) -> Result<String> {
     if timetable_id == 0 {
         timetable_id = create_timetable(user_id, fetched_date, &pool).await?; // Create a new timetable
         let fetched = fetch_timetable_by_synergetic_id(synergetic_id, user_id, timetable_id, &pool).await?;
+        let fetched = fetched.as_str();
+        match fetched {
+            "successful" => println!("Timetable exists on MGS API - id:{}", synergetic_id),
+            _ => { return Ok("unsuccessful".to_string()); }
+        }
 
         return Ok("successful".to_string());
     }
@@ -38,11 +43,11 @@ pub async fn initialise_timetable(user_id: i64) -> Result<String> {
 
     // Check if timetable exists on myMGS API
     match fetched {
-        "successful" => println!("Timetable exists {}", synergetic_id),
+        "successful" => println!("Timetable exists on MGS API - id:{}", synergetic_id),
         _ => { return Ok("unsuccessful".to_string()); }
     }
 
-    update_timetable_by_user_id(user_id, fetched_date, &pool).await?;
+    update_timetable_by_user_id(user_id, fetched_date, &pool).await?; // Update fetched date of existing timetable
     Ok("successful".to_string())
 }
 
