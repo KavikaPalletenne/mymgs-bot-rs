@@ -2,12 +2,13 @@
 // Copyright (c) 2021 Kavika Palletenne
 
 // Modules
-pub mod auth; // MGS login service
-pub mod persistence; // Has functions to enable concise fetching of users/timetables
+pub mod auth; // MGS login module
+pub mod persistence; // DB connection function
 pub mod models; // Holds data structs
-pub mod user; // User service
-pub mod timetable; // Timetable service
-pub mod class; // Class Service
+pub mod user; // User CRUD & utility functions
+pub mod timetable; // Timetable CRUD & utility functions
+pub mod class; // Class CRUD & utility functions
+pub mod bot; // Discord bot module
 
 // Imports
 use std::time::Instant; // Used for performance testing
