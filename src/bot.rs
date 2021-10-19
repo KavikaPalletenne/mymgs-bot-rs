@@ -11,8 +11,9 @@ use std::num::ParseIntError;
 use std::ops::Range;
 use std::str::FromStr;
 use std::time::Instant;
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, NaiveDate, Weekday};
 use serenity::model::gateway::Activity;
+use serenity::model::misc::Mentionable;
 use crate::class::get_all_classes_for_day_by_timetable_id;
 use crate::day::{get_day_number_by_date, get_day_numbers};
 use crate::persistence::establish_database_connection;
@@ -161,7 +162,15 @@ async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     match functions[0] {
         "today" => {
             let today_date = chrono::offset::Local::now().naive_local().date();
-            let day_number = get_day_number_by_date(today_date, &pool).await?;
+            let day_number = get_day_number_by_date(today_date, &pool).await?; // TODO: If today is a holiday, get the next school day's timetable instead
+
+            if today_date.weekday() == Weekday::from_str("Saturday").unwrap() ||
+                today_date.weekday() == Weekday::from_str("Sunday").unwrap() ||
+                day_number == 0 {
+                msg.reply(ctx, "Tomorrow is a holiday so you don't have to worry about what classes you have!");
+                return Ok(());
+            }
+
             let timetable_id = get_timetable_id_by_user_id_if_it_exists(user_id, &pool).await?;
             println!("Fetched timetable: {} for user: {}", timetable_id, user_id);
 
@@ -172,13 +181,26 @@ async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
             let classes = get_all_classes_for_day_by_timetable_id(timetable_id, day_number, &pool).await?;
             let message = format!("Classes: \n{:?}", classes); // TODO: format classes before sending message
+            let mut message = format!("{}, here is your timetable for today:\n```", msg.author.mention());
+            for i in 0..classes.len() {
+                message.push_str(classes[i].name.as_str());
+                message.push_str("\n");
+            }
+            message.push_str("```");
             msg.reply(ctx, message).await?;
         },
         "tomorrow" => {
             let today_date = chrono::offset::Local::now().naive_local().date();
-            let tomorrow_date = NaiveDate::from_ymd(today_date.year(), today_date.month(), today_date.day() + 1);
-
+            let tomorrow_date = NaiveDate::from_ymd(today_date.year(), today_date.month(), today_date.day() + 1); // TODO: If tomorrow is a holiday, get the next school day's timetable instead
             let day_number = get_day_number_by_date(tomorrow_date, &pool).await?;
+
+            if tomorrow_date.weekday() == Weekday::from_str("Saturday").unwrap() ||
+                tomorrow_date.weekday() == Weekday::from_str("Sunday").unwrap() ||
+                day_number == 0 {
+                msg.reply(ctx, "Tomorrow is a holiday so you don't have to worry about what classes you have!");
+                return Ok(());
+            }
+
             let timetable_id = get_timetable_id_by_user_id_if_it_exists(user_id, &pool).await?;
             println!("Fetched timetable: {} for user: {}", timetable_id, user_id);
             match timetable_id {
@@ -187,7 +209,13 @@ async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
             }
 
             let classes = get_all_classes_for_day_by_timetable_id(timetable_id, day_number, &pool).await?;
-            let message = format!("Classes: \n{:?}", classes); // TODO: format classes before sending message
+            //let message = format!("Classes: \n{:?}", classes); // TODO: format classes before sending message
+            let mut message = format!("{}, here is your timetable for tomorrow:\n```", msg.author.mention());
+            for i in 0..classes.len() {
+                message.push_str(classes[i].name.as_str());
+                message.push_str("\n");
+            }
+            message.push_str("```");
             msg.reply(ctx, message).await?;
         },
         _ => { msg.reply(ctx, error_message).await?; }
