@@ -3,7 +3,7 @@ use chrono::NaiveDate;
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct User {
-    pub id: i64, // Same as the unique "snowflake" number (u64, but returned by Discord as a String). Stored as u64 to enable faster SQL queries) , not something like "Endveous#1689" so that users changing their username won't affect the bot.
+    pub id: i64, // Same as the unique "snowflake" number (u64, but returned by Discord as a String. Stored as i64 to enable faster SQL queries) , not something like "Endveous#1689" so that users changing their username won't affect the bot.
     pub synergetic_user_id: i32,
     pub mgs_email: Option<String>,
     pub mgs_password: Option<String>,
