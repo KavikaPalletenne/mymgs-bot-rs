@@ -16,7 +16,7 @@ pub mod bot; // Discord bot module
 // For code simplicity
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-
+// TODO: Find a way to start a postgres pool at startup and use that all the time (starting one for each Discord command takes time)
 #[tokio::main]
 pub async fn main() -> Result<()> {
 
