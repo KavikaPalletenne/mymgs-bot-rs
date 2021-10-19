@@ -85,14 +85,14 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let parsed_string = i32::from_str(args.message());
     match parsed_string {
         Ok(i32) => synergetic_id = parsed_string.unwrap(),
-        Err(err) => { msg.reply(ctx,err).await?; return Ok(()); }
+        Err(err) => { msg.reply(ctx,err).await?; pool.close().await; return Ok(()); }
     }
 
     let range: Range<i32> = 4000..110000;
 
     if !range.contains(&synergetic_id) {
         msg.reply(ctx, "Synergetic ID is either too short or too long").await?;
-
+        pool.close().await;
         return Ok(());
     }
 
@@ -106,6 +106,7 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         msg.reply(ctx, "\
         Your timetable has already been fetched in the past 7 days, try again later.\n\
         **If your timetable was fetched with the wrong Synergetic ID, contact support:** https://discord.gg/NU2hVUnj").await?;
+        pool.close().await;
         return Ok(());
     }
 
@@ -132,6 +133,7 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
     //msg.reply(ctx,reply_msg).await?;
     println!("Fetched timetable {} and created user: {}ms", synergetic_id, now.elapsed().as_millis());
+    pool.close().await;
     Ok(())
 }
 
@@ -148,6 +150,7 @@ async fn dates(ctx: &Context, msg: &Message) -> CommandResult {
 
     get_day_numbers(1, &pool).await?;
     println!("Got day numbers: {}ms", now.elapsed().as_millis());
+    pool.close().await;
     Ok(())
 }
 
@@ -167,6 +170,7 @@ async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
                 today_date.weekday() == Weekday::from_str("Sunday").unwrap() ||
                 day_number == 0 {
                 msg.reply(ctx, "Tomorrow is a holiday so you don't have to worry about what classes you have!").await?;
+                pool.close().await;
                 return Ok(());
             }
 
@@ -174,7 +178,7 @@ async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
             println!("Fetched timetable: {} for user: {}", timetable_id, user_id);
 
             match timetable_id {
-                0 => {msg.reply(ctx, "Your timetable is not saved with the bot, type ``$help`` for instructions.").await?; return Ok(());},
+                0 => {msg.reply(ctx, "Your timetable is not saved with the bot, type ``$help`` for instructions.").await?; pool.close().await; return Ok(());},
                 _ => {}
             }
 
@@ -196,13 +200,14 @@ async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
                 tomorrow_date.weekday() == Weekday::from_str("Sunday").unwrap() ||
                 day_number == 0 {
                 msg.reply(ctx, "Tomorrow is a holiday so you don't have to worry about what classes you have!").await?;
+                pool.close().await;
                 return Ok(());
             }
 
             let timetable_id = get_timetable_id_by_user_id_if_it_exists(user_id, &pool).await?;
             println!("Fetched timetable: {} for user: {}", timetable_id, user_id);
             match timetable_id {
-                0 => {msg.reply(ctx, "Your timetable is not saved with the bot, type ``$help`` for instructions.").await?; return Ok(());},
+                0 => {msg.reply(ctx, "Your timetable is not saved with the bot, type ``$help`` for instructions.").await?; pool.close().await; return Ok(());},
                 _ => {}
             }
 
@@ -218,6 +223,7 @@ async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         _ => { msg.reply(ctx, error_message).await?; }
     }
 
+    pool.close().await;
     Ok(())
 }
 
