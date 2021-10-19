@@ -22,9 +22,15 @@ pub struct Timetable {
 pub struct Class {
     pub id: i32,
     pub timetable_id: i32,
-    pub day_number: i16, // Day 1 - 7
+    pub day_number: i16, // Day 1-7
     pub period_number: i16, // The first period of the day would have value "1"
 
     pub name: String,
     pub teacher: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Day {
+    pub date: NaiveDate,
+    pub day_number: i16, // Day 1-7
 }
