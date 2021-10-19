@@ -136,7 +136,7 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     }
 
     //msg.reply(ctx,reply_msg).await?;
-    println!("Fetched timetable and created user: {}ms", now.elapsed().as_millis());
+    println!("Fetched timetable {} and created user: {}ms", synergetic_id, now.elapsed().as_millis());
     Ok(())
 }
 
