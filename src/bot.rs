@@ -13,6 +13,8 @@ use std::str::FromStr;
 use std::time::Instant;
 use chrono::{Datelike, NaiveDate};
 use serenity::model::gateway::Activity;
+use crate::class::get_all_classes_for_day_by_timetable_id;
+use crate::day::{get_day_number_by_date, get_day_numbers};
 use crate::persistence::establish_database_connection;
 use crate::timetable::{get_timetable_by_user_id, get_timetable_id_by_user_id_if_it_exists, initialise_timetable};
 use crate::user::{create_user_by_id, delete_user_by_id};
@@ -32,6 +34,7 @@ const WELCOME_MESSAGE: &str = "\
     help,
     start,
     tt,
+    dates,
     compete,
     play
 )]
@@ -78,13 +81,6 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let pool = establish_database_connection().await?;
     let user_id = i64::from_str(msg.author.id.to_string().as_str()).unwrap();
 
-
-    if i64::from_str(msg.author.id.to_string().as_str()).unwrap() != 436035620905943041 {
-        msg.reply(ctx, "You cannot use that command").await?;
-
-        return Ok(());
-    }
-
     let mut synergetic_id = 0;
     let parsed_string = i32::from_str(args.message());
     match parsed_string {
@@ -101,8 +97,7 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     }
 
     // Used to check if timetable hasn't been fetched recently
-    let today = NaiveDate::parse_from_str(chrono::offset::Local::now().format("%Y-%m-%d").to_string().as_str(), "%Y-%m-%d").unwrap();
-
+    let today = chrono::offset::Local::now().naive_local().date();
     // If a timetable exists, make sure that it was not fetched recently
     if get_timetable_id_by_user_id_if_it_exists(user_id, &pool).await? != 0 &&
         get_timetable_by_user_id(user_id, &pool).await?.fetched_date
@@ -141,17 +136,62 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 }
 
 #[command]
-async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-    let functions: Vec<&str> = args.message().split(" ").collect();
+async fn dates(ctx: &Context, msg: &Message) -> CommandResult {
+    let now = Instant::now();
+    if i64::from_str(msg.author.id.to_string().as_str()).unwrap() != 436035620905943041 {
+        msg.reply(ctx, "You cannot use that command").await?;
 
-    let error_message = format!("Command error - ``{}`` is not a recognised command", functions[0]);
-    match functions[0] {
-        "today" => {},
-        "tomorrow" => {},
-        _ => { msg.reply(ctx, error_message).await?; }
+        return Ok(());
     }
 
+    let pool = establish_database_connection().await?;
 
+    get_day_numbers(1, &pool).await?;
+    println!("Got day numbers: {}ms", now.elapsed().as_millis());
+    Ok(())
+}
+
+#[command]
+async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+
+    let functions: Vec<&str> = args.message().split(" ").collect();
+    let pool = establish_database_connection().await?;
+    let user_id = i64::from_str(msg.author.id.to_string().as_str()).unwrap();
+    let error_message = format!("Command error - ``{}`` is not a recognised command", functions[0]);
+    match functions[0] {
+        "today" => {
+            let today_date = chrono::offset::Local::now().naive_local().date();
+            let day_number = get_day_number_by_date(today_date, &pool).await?;
+            let timetable_id = get_timetable_id_by_user_id_if_it_exists(user_id, &pool).await?;
+            println!("Fetched timetable: {} for user: {}", timetable_id, user_id);
+
+            match timetable_id {
+                0 => {msg.reply(ctx, "Your timetable is not saved with the bot, type ``$help`` for instructions.").await?; return Ok(());},
+                _ => {}
+            }
+
+            let classes = get_all_classes_for_day_by_timetable_id(timetable_id, day_number, &pool).await?;
+            let message = format!("Classes: \n{:?}", classes); // TODO: format classes before sending message
+            msg.reply(ctx, message).await?;
+        },
+        "tomorrow" => {
+            let today_date = chrono::offset::Local::now().naive_local().date();
+            let tomorrow_date = NaiveDate::from_ymd(today_date.year(), today_date.month(), today_date.day() + 1);
+
+            let day_number = get_day_number_by_date(tomorrow_date, &pool).await?;
+            let timetable_id = get_timetable_id_by_user_id_if_it_exists(user_id, &pool).await?;
+            println!("Fetched timetable: {} for user: {}", timetable_id, user_id);
+            match timetable_id {
+                0 => {msg.reply(ctx, "Your timetable is not saved with the bot, type ``$help`` for instructions.").await?; return Ok(());},
+                _ => {}
+            }
+
+            let classes = get_all_classes_for_day_by_timetable_id(timetable_id, day_number, &pool).await?;
+            let message = format!("Classes: \n{:?}", classes); // TODO: format classes before sending message
+            msg.reply(ctx, message).await?;
+        },
+        _ => { msg.reply(ctx, error_message).await?; }
+    }
 
     Ok(())
 }
