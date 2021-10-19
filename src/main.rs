@@ -12,7 +12,6 @@ pub mod day; // Day number module
 pub mod bot; // Discord bot module
 
 // Imports
-use std::time::Instant; // Used for performance testing
 
 // For code simplicity
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;

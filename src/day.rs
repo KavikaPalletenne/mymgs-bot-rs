@@ -2,14 +2,12 @@ use std::env;
 use std::str::FromStr;
 use dotenv::dotenv;
 use crate::auth::login;
-use crate::persistence::establish_database_connection;
 use serde_json;
 use hyper::{Client, Request, Body};
 use hyper_tls::HttpsConnector;
 use chrono::NaiveDate;
 use std::time::Instant;
 use sqlx::{Pool, Postgres};
-use sqlx::postgres::PgQueryResult;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
@@ -28,7 +26,7 @@ pub async fn create_day(date: NaiveDate, day_number: i16, pool: &Pool<Postgres>)
         return Ok(());
     }
 
-    let result: PgQueryResult = sqlx::query!(
+    sqlx::query!(
         "INSERT INTO days (date, day_number) VALUES ($1, $2)",
         date, day_number
     ).execute(pool).await?;

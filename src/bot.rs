@@ -6,8 +6,7 @@ use serenity::framework::standard::{StandardFramework, CommandResult, macros::{
     group
 }, Args};
 
-use std::{env, time};
-use std::num::ParseIntError;
+use std::env;
 use std::ops::Range;
 use std::str::FromStr;
 use std::time::Instant;
@@ -82,7 +81,7 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let pool = establish_database_connection().await?;
     let user_id = i64::from_str(msg.author.id.to_string().as_str()).unwrap();
 
-    let mut synergetic_id = 0;
+    let synergetic_id : i32;
     let parsed_string = i32::from_str(args.message());
     match parsed_string {
         Ok(i32) => synergetic_id = parsed_string.unwrap(),
@@ -118,7 +117,7 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
     // Delete user so that creating user works all the time.
     delete_user_by_id(user_id, &pool).await?;
-    let user = create_user_by_id(user_id, synergetic_id, "kbpalletenne@student.mgs.vic.edu.au", "12062004", &pool).await?;
+    create_user_by_id(user_id, synergetic_id, "kbpalletenne@student.mgs.vic.edu.au", "12062004", &pool).await?;
 
     // Check if timetable exists on myMGS API
     let timetable_response = initialise_timetable(user_id, &pool).await?;
@@ -167,7 +166,7 @@ async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
             if today_date.weekday() == Weekday::from_str("Saturday").unwrap() ||
                 today_date.weekday() == Weekday::from_str("Sunday").unwrap() ||
                 day_number == 0 {
-                msg.reply(ctx, "Tomorrow is a holiday so you don't have to worry about what classes you have!");
+                msg.reply(ctx, "Tomorrow is a holiday so you don't have to worry about what classes you have!").await?;
                 return Ok(());
             }
 
@@ -180,7 +179,6 @@ async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
             }
 
             let classes = get_all_classes_for_day_by_timetable_id(timetable_id, day_number, &pool).await?;
-            let message = format!("Classes: \n{:?}", classes); // TODO: format classes before sending message
             let mut message = format!("{}, here is your timetable for today:\n```", msg.author.mention());
             for i in 0..classes.len() {
                 message.push_str(classes[i].name.as_str());
@@ -197,7 +195,7 @@ async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
             if tomorrow_date.weekday() == Weekday::from_str("Saturday").unwrap() ||
                 tomorrow_date.weekday() == Weekday::from_str("Sunday").unwrap() ||
                 day_number == 0 {
-                msg.reply(ctx, "Tomorrow is a holiday so you don't have to worry about what classes you have!");
+                msg.reply(ctx, "Tomorrow is a holiday so you don't have to worry about what classes you have!").await?;
                 return Ok(());
             }
 
@@ -209,7 +207,6 @@ async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
             }
 
             let classes = get_all_classes_for_day_by_timetable_id(timetable_id, day_number, &pool).await?;
-            //let message = format!("Classes: \n{:?}", classes); // TODO: format classes before sending message
             let mut message = format!("{}, here is your timetable for tomorrow:\n```", msg.author.mention());
             for i in 0..classes.len() {
                 message.push_str(classes[i].name.as_str());
