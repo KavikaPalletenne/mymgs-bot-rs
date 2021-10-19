@@ -18,8 +18,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 pub async fn initialise_timetable(user_id: i64, pool: &PgPool) -> Result<String> {
 
     let synergetic_id = user::get_user_synergetic_id_by_user_id(user_id, pool).await?;
-    let local_date = chrono::offset::Local::now().format("%Y-%m-%d").to_string();
-    let fetched_date = chrono::NaiveDate::parse_from_str(&*local_date, "%Y-%m-%d").unwrap();
+    let fetched_date = chrono::offset::Local::now().naive_local().date();
 
     let mut timetable_id = get_timetable_id_by_user_id_if_it_exists(user_id, pool).await?; // Returns 0 if timetable doesn't exist
 
@@ -68,7 +67,9 @@ pub async fn fetch_timetable_by_synergetic_id(synergetic_id: i32, user_id: i64, 
         .body(Body::empty())
         .unwrap();
 
+    let now = Instant::now();
     let response = client.request(request).await?;
+    println!("Got back timetable JSON: {}ms", now.elapsed().as_millis());
     let body_bytes = hyper::body::to_bytes(response).await?;
     let body = String::from_utf8(body_bytes.to_vec()).expect("response was not valid utf-8");
     let json: serde_json::Value = serde_json::from_str(&body.as_str()).expect("JSON was not formatted properly");
@@ -176,15 +177,14 @@ pub async fn delete_timetable_by_user_id(user_id: i64, pool: &Pool<Postgres>) ->
 
 // Check if timetable exists and return its id. If it doesn't exists, the returned id is 0
 pub async fn get_timetable_id_by_user_id_if_it_exists(user_id: i64, pool: &Pool<Postgres>) -> Result<i32> {
-    let timetable_id = sqlx::query!(
-        "SELECT id FROM timetables
-         WHERE EXISTS (SELECT id FROM timetables WHERE user_id = $1)",
+    let records = sqlx::query!(
+        "SELECT id FROM timetables WHERE user_id = $1",
         user_id
-    ).fetch_all(pool).await?;
+    ).fetch_all(pool).await?; // Should only be returning one record
 
-    if timetable_id.len() == 0 {
+    if records.len() == 0 {
         return Ok(0);
     }
 
-    Ok(timetable_id[0].id)
+    Ok(records[0].id)
 }
