@@ -150,6 +150,7 @@ async fn dates(ctx: &Context, msg: &Message) -> CommandResult {
 
     get_day_numbers(1, &pool).await?;
     println!("Got day numbers: {}ms", now.elapsed().as_millis());
+    msg.reply(ctx, "Finished fetching the day numbers").await?;
     pool.close().await;
     Ok(())
 }
