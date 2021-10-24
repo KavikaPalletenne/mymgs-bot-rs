@@ -140,11 +140,11 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 #[command]
 async fn dates(ctx: &Context, msg: &Message) -> CommandResult {
     let now = Instant::now();
-    if i64::from_str(msg.author.id.to_string().as_str()).unwrap() != 436035620905943041 {
-        msg.reply(ctx, "You cannot use that command").await?;
-
-        return Ok(());
-    }
+    // if i64::from_str(msg.author.id.to_string().as_str()).unwrap() != 436035620905943041 {
+    //     msg.reply(ctx, "You cannot use that command").await?;
+    //
+    //     return Ok(());
+    // }
 
     let pool = establish_database_connection().await?;
 
