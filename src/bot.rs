@@ -34,6 +34,9 @@ const WELCOME_MESSAGE: &str = "\
     help,
     start,
     tt,
+    today,
+    tomorrow,
+    tmr,
     dates,
     compete,
     play
@@ -225,6 +228,114 @@ async fn tt(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     }
 
     pool.close().await;
+    Ok(())
+}
+
+#[command]
+async fn today(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+    let pool = establish_database_connection().await?;
+    let user_id = i64::from_str(msg.author.id.to_string().as_str()).unwrap();
+
+    let today_date = chrono::offset::Local::now().naive_local().date();
+    let day_number = get_day_number_by_date(today_date, &pool).await?; // TODO: If today is a holiday, get the next school day's timetable instead
+
+    if today_date.weekday() == Weekday::from_str("Saturday").unwrap() ||
+        today_date.weekday() == Weekday::from_str("Sunday").unwrap() ||
+        day_number == 0 {
+        msg.reply(ctx, "Tomorrow is a holiday so you don't have to worry about what classes you have!").await?;
+        pool.close().await;
+        return Ok(());
+    }
+
+    let timetable_id = get_timetable_id_by_user_id_if_it_exists(user_id, &pool).await?;
+    println!("Fetched timetable: {} for user: {}", timetable_id, user_id);
+
+    match timetable_id {
+        0 => {msg.reply(ctx, "Your timetable is not saved with the bot, type ``$help`` for instructions.").await?; pool.close().await; return Ok(());},
+        _ => {}
+    }
+
+    let classes = get_all_classes_for_day_by_timetable_id(timetable_id, day_number, &pool).await?;
+    let mut message = format!("{}, here is your timetable for today:\n```", msg.author.mention());
+    for i in 0..classes.len() {
+        message.push_str(classes[i].name.as_str());
+        message.push_str("\n");
+    }
+    message.push_str("```");
+    msg.reply(ctx, message).await?;
+
+    Ok(())
+}
+
+#[command]
+async fn tomorrow(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+    let pool = establish_database_connection().await?;
+    let user_id = i64::from_str(msg.author.id.to_string().as_str()).unwrap();
+
+    let today_date = chrono::offset::Local::now().naive_local().date();
+    let tomorrow_date = NaiveDate::from_ymd(today_date.year(), today_date.month(), today_date.day() + 1); // TODO: If tomorrow is a holiday, get the next school day's timetable instead
+    let day_number = get_day_number_by_date(tomorrow_date, &pool).await?;
+
+    if tomorrow_date.weekday() == Weekday::from_str("Saturday").unwrap() ||
+        tomorrow_date.weekday() == Weekday::from_str("Sunday").unwrap() ||
+        day_number == 0 {
+        msg.reply(ctx, "Tomorrow is a holiday so you don't have to worry about what classes you have!").await?;
+        pool.close().await;
+        return Ok(());
+    }
+
+    let timetable_id = get_timetable_id_by_user_id_if_it_exists(user_id, &pool).await?;
+    println!("Fetched timetable: {} for user: {}", timetable_id, user_id);
+    match timetable_id {
+        0 => {msg.reply(ctx, "Your timetable is not saved with the bot, type ``$help`` for instructions.").await?; pool.close().await; return Ok(());},
+        _ => {}
+    }
+
+    let classes = get_all_classes_for_day_by_timetable_id(timetable_id, day_number, &pool).await?;
+    let mut message = format!("{}, here is your timetable for tomorrow:\n```", msg.author.mention());
+    for i in 0..classes.len() {
+        message.push_str(classes[i].name.as_str());
+        message.push_str("\n");
+    }
+    message.push_str("```");
+    msg.reply(ctx, message).await?;
+
+    Ok(())
+}
+
+#[command]
+async fn tmr(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+    let pool = establish_database_connection().await?;
+    let user_id = i64::from_str(msg.author.id.to_string().as_str()).unwrap();
+
+    let today_date = chrono::offset::Local::now().naive_local().date();
+    let tomorrow_date = NaiveDate::from_ymd(today_date.year(), today_date.month(), today_date.day() + 1); // TODO: If tomorrow is a holiday, get the next school day's timetable instead
+    let day_number = get_day_number_by_date(tomorrow_date, &pool).await?;
+
+    if tomorrow_date.weekday() == Weekday::from_str("Saturday").unwrap() ||
+        tomorrow_date.weekday() == Weekday::from_str("Sunday").unwrap() ||
+        day_number == 0 {
+        msg.reply(ctx, "Tomorrow is a holiday so you don't have to worry about what classes you have!").await?;
+        pool.close().await;
+        return Ok(());
+    }
+
+    let timetable_id = get_timetable_id_by_user_id_if_it_exists(user_id, &pool).await?;
+    println!("Fetched timetable: {} for user: {}", timetable_id, user_id);
+    match timetable_id {
+        0 => {msg.reply(ctx, "Your timetable is not saved with the bot, type ``$help`` for instructions.").await?; pool.close().await; return Ok(());},
+        _ => {}
+    }
+
+    let classes = get_all_classes_for_day_by_timetable_id(timetable_id, day_number, &pool).await?;
+    let mut message = format!("{}, here is your timetable for tomorrow:\n```", msg.author.mention());
+    for i in 0..classes.len() {
+        message.push_str(classes[i].name.as_str());
+        message.push_str("\n");
+    }
+    message.push_str("```");
+    msg.reply(ctx, message).await?;
+
     Ok(())
 }
 
