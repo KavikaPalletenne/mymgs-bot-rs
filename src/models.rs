@@ -1,5 +1,5 @@
-use serde::{ Serialize, Deserialize };
 use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct User {
@@ -9,7 +9,6 @@ pub struct User {
     pub mgs_password: Option<String>,
 }
 
-
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Timetable {
     pub id: i32,
@@ -17,12 +16,11 @@ pub struct Timetable {
     pub fetched_date: NaiveDate,
 }
 
-
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Class {
     pub id: i32,
     pub timetable_id: i32,
-    pub day_number: i16, // Day 1-7
+    pub day_number: i16,    // Day 1-7
     pub period_number: i16, // The first period of the day would have value "1"
 
     pub name: String,

@@ -3,13 +3,13 @@
 
 // Modules
 pub mod auth; // MGS login module
-pub mod persistence; // DB connection function
-pub mod models; // Holds data structs
-pub mod user; // User CRUD & utility functions
-pub mod timetable; // Timetable CRUD & utility functions
+pub mod bot;
 pub mod class; // Class CRUD & utility functions
 pub mod day; // Day number module
-pub mod bot; // Discord bot module
+pub mod models; // Holds data structs
+pub mod persistence; // DB connection function
+pub mod timetable; // Timetable CRUD & utility functions
+pub mod user; // User CRUD & utility functions // Discord bot module
 
 // Imports
 
@@ -19,15 +19,12 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 // TODO: Find a way to start a postgres pool at startup and use that all the time (starting one for each Discord command takes time)
 #[tokio::main]
 pub async fn main() -> Result<()> {
-
     let jh = tokio::task::spawn(run());
     jh.await?
-
 }
 
 // Multithreading // TODO: Add the Discord bot run code here, so it can be run on all threads.
 async fn run() -> Result<()> {
-
     // let now = Instant::now();
     //timetable::initialise_timetable(436035620905943041).await?;
     // let time_elapsed = now.elapsed();

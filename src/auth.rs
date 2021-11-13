@@ -1,7 +1,7 @@
 // Used to generate SAML cookies and keys for use in further requests.
 // Copyright (c) 2021 Kavika Palletenne
 
-use hyper::{Client, Request, Body};
+use hyper::{Body, Client, Request};
 use hyper_tls::HttpsConnector;
 use std::time::Instant;
 use url::form_urlencoded::Serializer;
@@ -33,15 +33,23 @@ pub async fn login(username: &str, password: &str) -> Result<(String, String, St
         .body(Body::from(body))
         .unwrap();
 
-
     let response = client.request(request).await?;
-    let msis_auth_cookie = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..1733];
-
+    let msis_auth_cookie = &response
+        .headers()
+        .get("Set-Cookie")
+        .unwrap()
+        .to_str()
+        .unwrap()[..1733];
 
     ///////////////////////
     // Get SAMLResponse Key
     ///////////////////////
-    let next_saml_request_url = response.headers().get("Location").unwrap().to_str().unwrap();
+    let next_saml_request_url = response
+        .headers()
+        .get("Location")
+        .unwrap()
+        .to_str()
+        .unwrap();
     let cookie_header = format!("{}; {}", msis_auth_cookie, simple_saml_session_id);
     let request = Request::builder()
         .method("GET")
@@ -58,13 +66,15 @@ pub async fn login(username: &str, password: &str) -> Result<(String, String, St
 
     let saml_response = &body.to_string()[230..17442]; // Get from the body of the response.
 
-
     //////////////////////////
     // Get SimpleSAMLAuthToken
     //////////////////////////
     let body: String = Serializer::new(String::new())
         .append_pair("SAMLResponse", saml_response)
-        .append_pair("RelayState", "https://my.mgs.vic.edu.au/mg/saml_login?destination=mymgs")
+        .append_pair(
+            "RelayState",
+            "https://my.mgs.vic.edu.au/mg/saml_login?destination=mymgs",
+        )
         .finish();
 
     let request = Request::builder()
@@ -76,13 +86,20 @@ pub async fn login(username: &str, password: &str) -> Result<(String, String, St
         .unwrap();
 
     let response = client.request(request).await?;
-    let simple_saml_auth_token_cookie = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..63];
-
+    let simple_saml_auth_token_cookie = &response
+        .headers()
+        .get("Set-Cookie")
+        .unwrap()
+        .to_str()
+        .unwrap()[..63];
 
     ////////////////////////
     // Get SSESSxxxx Cookie
     ////////////////////////
-    let cookie_header = format!("{}; {}", simple_saml_session_id, simple_saml_auth_token_cookie);
+    let cookie_header = format!(
+        "{}; {}",
+        simple_saml_session_id, simple_saml_auth_token_cookie
+    );
     let request = Request::builder()
         .method("GET")
         .uri("https://my.mgs.vic.edu.au/mg/saml_login?destination=mymgs")
@@ -92,21 +109,40 @@ pub async fn login(username: &str, password: &str) -> Result<(String, String, St
 
     let response = client.request(request).await?;
 
-    let ssess_cookie = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..81];
+    let ssess_cookie = &response
+        .headers()
+        .get("Set-Cookie")
+        .unwrap()
+        .to_str()
+        .unwrap()[..81];
     println!("Logged in: {}ms", now.elapsed().as_millis());
-    Ok((simple_saml_session_id, simple_saml_auth_token_cookie.to_string(), ssess_cookie.to_string()))
+    Ok((
+        simple_saml_session_id,
+        simple_saml_auth_token_cookie.to_string(),
+        ssess_cookie.to_string(),
+    ))
 }
 
 // Generate URL to push login info to + Generate SAML Session ID cookie
 pub async fn fetch_saml_prerequisites() -> Result<(String, String)> {
-
     let https = HttpsConnector::new();
     let client = Client::builder().build::<_, hyper::Body>(https);
-    let response = client.get(MGS_SAML_LOGIN_ENTRYPOINT.to_string().parse().unwrap()).await?;
+    let response = client
+        .get(MGS_SAML_LOGIN_ENTRYPOINT.to_string().parse().unwrap())
+        .await?;
 
-    let saml_post_url = response.headers().get("Location").unwrap().to_str().unwrap(); // URL to POST login form with data
-    let session_id = &response.headers().get("Set-Cookie").unwrap().to_str().unwrap()[..52]; // get only the session ID
-
+    let saml_post_url = response
+        .headers()
+        .get("Location")
+        .unwrap()
+        .to_str()
+        .unwrap(); // URL to POST login form with data
+    let session_id = &response
+        .headers()
+        .get("Set-Cookie")
+        .unwrap()
+        .to_str()
+        .unwrap()[..52]; // get only the session ID
 
     Ok((saml_post_url.to_string(), session_id.to_string()))
 }
