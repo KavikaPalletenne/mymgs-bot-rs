@@ -109,7 +109,7 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     {
         msg.reply(ctx, "\
         Your timetable has already been fetched in the past 7 days, try again later.\n\
-        **If your timetable was fetched with the wrong Synergetic ID, contact support:** https://discord.gg/NU2hVUnj").await?;
+        **If your timetable was fetched with the wrong Synergetic ID, contact support:** https://discord.gg/uZp8fpue7E").await?;
         pool.close().await;
         return Ok(());
     }
@@ -117,7 +117,7 @@ async fn start(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let reply_msg = format!(
         "**SUCCESS**\n\
         The bot has fetched the timetable associated with Synergetic ID ``{}`` and assigned it to your account.\n\
-        **If you have entered your ID incorrectly, please contact support:** https://discord.gg/NU2hVUnj"
+        **If you have entered your ID incorrectly, please contact support:** https://discord.gg/uZp8fpue7E"
         , synergetic_id);
 
     // Delete user so that creating user works all the time.

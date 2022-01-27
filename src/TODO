@@ -1,0 +1,4 @@
+TODO:
+
+- Add the Discord Bot Functionality (with slash commands)
+- Optimise functions, especially auth::login()

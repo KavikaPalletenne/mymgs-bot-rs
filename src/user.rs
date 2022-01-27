@@ -29,7 +29,7 @@ pub async fn create_user_by_id(
 
 // Read
 pub async fn get_user_by_id(id: i64, pool: &Pool<Postgres>) -> Result<User> {
-    let user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", id)
+        let user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", id)
         .fetch_one(pool)
         .await?;
 
